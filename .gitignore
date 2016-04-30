@@ -1,1 +1,4 @@
 hrcemail.sqlite
+
+train/*.o
+train/train
