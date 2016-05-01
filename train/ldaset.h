@@ -26,7 +26,7 @@ std::map<std::string,std::map<T,int>> doc_list_topics;
 
 //maps documents to topic
 //output of process function will be stored here
-std::map<std::tuple<std::string, int>,int> doc_topics;
+std::map<std::string,int> doc_topics;
 
 public:
     LDAset(int num_topics);
