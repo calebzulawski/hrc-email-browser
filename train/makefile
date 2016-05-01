@@ -1,24 +1,39 @@
 CXX=g++
-CXXFLAGS=-g -std=c++11 -Wall -pedantic
-INCLUDE=-L/usr/lib/x86_64-linux-gnu
-LIBS=-lsqlite3
+CXXFLAGS=-std=c++11 -Wall -pedantic
+
+# change this if you install MITIE elsewhere
+MITIE_DIR=MITIE
+
+# change this if you place the sqlite3 database elsewhere
+DB=../hrcemail.sqlite
+
+LIB_DIR=-L/usr/lib/x86_64-linux-gnu -L$(MITIE_DIR)/mitielib
+LIBS=-lsqlite3 -lmitie
+INCLUDE=-I$(MITIE_DIR)/mitielib/include
+
 BIN=train
 
 SRC=$(wildcard *.cpp)
 OBJ=$(SRC:%.cpp=%.o)
-MITIE_DIR=MITIE
-MITIE_OBJ=mitielib/libmitie.a
 
-all: $(BIN)
+.DEFAULT_GOAL=build
 
 $(BIN): $(MITIE_DIR)/$(MITIE_OBJ) $(OBJ)
-	$(CXX) -o $(BIN) $^ $(INCLUDE) $(LIBS)
+	$(CXX) -o $(BIN) $(CXXFLAGS) $(OBJ) $(INCLUDE) $(LIB_DIR) $(LIBS)
 
 $(MITIE_DIR)/$(MITIE_OBJ):
 	make -C $(MITIE_DIR)
 
 %.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) $^
+	$(CXX) -c $(CXXFLAGS) $^ $(INCLUDE)
+
+run: $(BIN)
+	# to run the program, you need to find the .so file
+	LD_LIBRARY_PATH=$(MITIE_DIR)/mitielib ./$(BIN)
+
+debug: CXXFLAGS += -g
+
+debug build: $(BIN)
 
 clean:
 	rm -f *.o
