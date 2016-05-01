@@ -1,3 +1,4 @@
 [submodule "train/MITIE"]
 	path = train/MITIE
 	url = git@github.com:mit-nlp/MITIE.git
+	ignore = dirty
