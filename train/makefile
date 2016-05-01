@@ -4,6 +4,8 @@ CXXFLAGS=-std=c++11 -Wall -pedantic
 # change this if you install MITIE elsewhere
 MITIE_DIR=MITIE
 
+LIBMITIE=$(MITIE_DIR)/mitielib/libmitie.so
+
 # change this if you place the sqlite3 database elsewhere
 DB=../hrcemail.sqlite
 
@@ -16,12 +18,12 @@ BIN=train
 SRC=$(wildcard *.cpp)
 OBJ=$(SRC:%.cpp=%.o)
 
-.DEFAULT_GOAL=build
+.DEFAULT_GOAL=$(BIN)
 
-$(BIN): $(MITIE_DIR)/$(MITIE_OBJ) $(OBJ)
+$(BIN): $(LIBMITIE) $(OBJ)
 	$(CXX) -o $(BIN) $(CXXFLAGS) $(OBJ) $(INCLUDE) $(LIB_DIR) $(LIBS)
 
-$(MITIE_DIR)/$(MITIE_OBJ):
+$(LIBMITIE):
 	make -C $(MITIE_DIR)
 
 %.o: %.cpp
@@ -32,8 +34,7 @@ run: $(BIN)
 	LD_LIBRARY_PATH=$(MITIE_DIR)/mitielib ./$(BIN)
 
 debug: CXXFLAGS += -g
-
-debug build: $(BIN)
+debug: $(BIN)
 
 clean:
 	rm -f *.o
