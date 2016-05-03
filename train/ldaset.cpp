@@ -1,5 +1,6 @@
 #include "ldaset.h"
 #include <typeinfo>
+#include <iomanip>
 
 template <class T>
 LDAset<T>::LDAset(int num_topics){
@@ -97,18 +98,16 @@ void LDAset<T>::process(int epochs){
     }
 
     // iterate through all documents and calculate most probable class
-    std::vector<int> topic_counts (K,0);
     for (auto &document: doc_list){
         std::string curr_doc = document.first;
-        int maxtopic = K;
-        for (auto &token_pair: doc_list[curr_doc]){
-            T token = token_pair.first;
-            topic_counts[doc_list_topics[curr_doc][token]] += doc_list[curr_doc][token];
-        }
-        maxtopic = std::distance(topic_counts.begin(),std::max_element(topic_counts.begin(), topic_counts.end()));
-        doc_topics[curr_doc] = maxtopic;
 
-        topic_counts.assign(K,0);
+        if (doc_topics[curr_doc].size() < K){
+            doc_topics[curr_doc].assign(K,0);
+        }
+
+        for (int curr_topic = 0; curr_topic < K; curr_topic++){
+            doc_topics[curr_doc][curr_topic] = doc_topic_spread[curr_doc][curr_topic]/tokens_per_doc[curr_doc];
+        }
     }
 
 }
@@ -120,8 +119,12 @@ void LDAset<T>::setTotalTokenCount(int count){
 
 template <class T>
 void LDAset<T>::dumpResults(){
-    for (auto doc: doc_topics){
-        std::cout << doc.first << ": " << doc.second << "\n";
+    for (auto &doc: doc_topics){
+        std::cout << doc.first << ":\t";
+        for (int curr_topic = 0; curr_topic < K; curr_topic++){
+            std::cout << std::setprecision(3) << doc.second[curr_topic] << "\t";
+        }
+        std::cout << "\n";
     }
 }
 

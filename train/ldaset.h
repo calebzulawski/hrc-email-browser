@@ -33,7 +33,7 @@ std::map<std::string,std::map<T,int>> doc_list;
 
 //maps documents to topic
 //output of process function will be stored here
-std::map<std::string,int> doc_topics;
+std::map<std::string,std::vector<double>> doc_topics;
 
 public:
     std::map<std::string,std::map<T,int>> doc_list_topics;
