@@ -22,10 +22,13 @@ void LDAset<T>::insertInitValue(T token, std::string doc) {
     int curr_topic = rand()%K;
     token_list[token]++;
     doc_list[doc][token]++;
-    if (doc_list_topics[doc].find(token) == doc_list_topics[doc].end())
+    if (doc_list_topics[doc].find(token) == doc_list_topics[doc].end()){
         doc_list_topics[doc][token] = curr_topic;
-    else
+    }
+    else{
         curr_topic = doc_list_topics[doc][token];
+    }
+    doc_topic_spread[doc][curr_topic]++;
     tokens_per_doc[doc]++;
     tokens_in_topic[token][curr_topic]++;
     tokens_per_topic[curr_topic]++;
@@ -52,13 +55,16 @@ void LDAset<T>::process(int epochs){
                 int maxprob = INT_MIN;
                 int tokens_in_curr_doc = doc_list[curr_doc][token];
                 tokens_in_topic[token][maxtopic] -= tokens_in_curr_doc;
+
+                doc_topic_spread[curr_doc][maxtopic] -= tokens_in_curr_doc;
+
                 for (int curr_topic = 0; curr_topic < K; curr_topic++){
-                    double p_t_d = log(tokens_in_curr_doc + 1);
+                    double p_t_d = log(doc_topic_spread[curr_doc][curr_topic] + 1);
                     p_t_d -= log(tokens_per_doc[curr_doc]);
                     double p_w_t = log(tokens_in_topic[token][curr_topic] + tokens_in_curr_doc + 1);
                     p_w_t -= log(tokens_per_topic[curr_topic]);
 
-                    double total_prob = p_t_d * p_w_t;
+                    double total_prob = p_t_d + p_w_t;
                     if (total_prob > maxprob){
                         maxtopic = curr_topic;
                         maxprob = total_prob;
@@ -68,6 +74,8 @@ void LDAset<T>::process(int epochs){
                 if (force_converge){
                     doc_prob += maxprob/doc_list[curr_doc].size();
                 }
+
+                doc_topic_spread[curr_doc][maxtopic] += tokens_in_curr_doc;
                 tokens_in_topic[token][maxtopic] += tokens_in_curr_doc;
                 doc_list_topics[curr_doc][token] = maxtopic;
             }
@@ -151,7 +159,7 @@ int main(){
         }
     }
 
-    test_set.process(500);
+    test_set.process(5);
 
     std::cout << "trained classes\n";
     for (auto &doc: test_set.doc_list_topics){

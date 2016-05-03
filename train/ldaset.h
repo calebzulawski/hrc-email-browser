@@ -37,6 +37,7 @@ std::map<std::string,int> doc_topics;
 
 public:
     std::map<std::string,std::map<T,int>> doc_list_topics;
+    std::map<std::string,std::map<int,int>> doc_topic_spread;
     LDAset(int num_topics);
     ~LDAset();
     void insertInitValue(T token, std::string doc);
