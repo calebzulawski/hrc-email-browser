@@ -114,53 +114,67 @@ void LDAset<T>::setTotalTokenCount(int count){
 
 template <class T>
 void LDAset<T>::dumpResults(){
+    // dump document-topic matrix
+
+    if (K < 1) return;
+    if (int_to_doc.size() < 1) return;
+    if (int_to_token.size() < 1) return;
+
+    std::cout << "Document-Topic Matrix" << std::endl;
+    for (int doc = 0; doc < int_to_doc.size(); doc++){
+        std::cout << int_to_doc[doc] << ":\t";
+        for (int topic = 0; topic < K; topic++){
+            std::cout << doc_topic[std::make_pair(doc,topic)] << "\t";
+        }
+        std::cout << std::endl;
+    }
+
+    // dump topic-token matrix
+    std::cout << "Topic-Token Matrix" << std::endl;
+    for (int topic = 0; topic < K; topic++){
+        std::cout << topic << ":\t";
+        for (int token = 0; token < int_to_token.size(); token++){
+            std::cout << topic_token[std::make_pair(topic,token)] << "\t";
+        }
+        std::cout << std::endl;
+    }
     return;
 }
 
 int main(){
-    // LDAset<std::string> test_set(3);
-    // std::cout << "created new LDAset\n";
-    //
-    // std::map<std::string,std::vector<std::string>> docset = {
-    //     {"doc01", {"cat", "cat", "cat", "cat"}},
-    //     {"doc02", {"dog", "dog", "dog", "dog"}},
-    //     {"doc03", {"rat", "rat", "rat", "rat"}},
-    //     {"doc04", {"dog", "dog", "dog", "dog"}},
-    //     {"doc05", {"cat", "cat", "cat", "cat"}},
-    //     {"doc06", {"rat", "rat", "rat", "rat"}},
-    //     {"doc07", {"cat", "cat", "cat", "cat"}},
-    //     {"doc08", {"dog", "dog", "dog", "dog"}},
-    //     {"doc09", {"rat", "rat", "rat", "rat"}},
-    //     {"doc10", {"dog", "dog", "dog", "dog"}},
-    //     {"doc11", {"cat", "cat", "cat", "cat"}},
-    //     {"doc12", {"rat", "rat", "rat", "rat"}},
-    //     {"doc13", {"cat", "cat", "cat", "cat"}},
-    //     {"doc14", {"dog", "dog", "dog", "dog"}},
-    //     {"doc15", {"rat", "rat", "rat", "rat"}},
-    //     {"doc16", {"dog", "dog", "dog", "dog"}},
-    //     {"doc17", {"cat", "cat", "cat", "cat"}},
-    //     {"doc18", {"rat", "rat", "rat", "rat"}},
-    // };
-    //
-    // for (auto &doc: docset){
-    //     for (auto &token: doc.second){
-    //         test_set.insertInitValue(token,doc.first);
-    //         std::cout << doc.first << " ";
-    //         std::cout << token << " ";
-    //         std::cout << test_set.doc_list_topics[doc.first][token] << "\n";
-    //     }
-    // }
-    //
-    // test_set.process(5);
-    //
-    // std::cout << "trained classes\n";
-    // for (auto &doc: test_set.doc_list_topics){
-    //     for (auto &token: doc.second){
-    //         std::cout << doc.first << " ";
-    //         std::cout << token.first << " ";
-    //         std::cout << test_set.doc_list_topics[doc.first][token.first] << "\n";
-    //     }
-    // }
-    //
-    // test_set.dumpResults();
+    LDAset<std::string> test_set(3);
+    std::cout << "created new LDAset\n";
+
+    std::map<std::string,std::vector<std::string>> docset = {
+        {"doc01", {"cat", "cat", "cat", "cat"}},
+        {"doc02", {"dog", "dog", "dog", "dog"}},
+        {"doc03", {"rat", "rat", "rat", "rat"}},
+        {"doc04", {"dog", "dog", "dog", "dog"}},
+        {"doc05", {"cat", "cat", "cat", "cat"}},
+        {"doc06", {"rat", "rat", "rat", "rat"}},
+        {"doc07", {"cat", "cat", "cat", "cat"}},
+        {"doc08", {"dog", "dog", "dog", "dog"}},
+        {"doc09", {"rat", "rat", "rat", "rat"}},
+        {"doc10", {"dog", "dog", "dog", "dog"}},
+        {"doc11", {"cat", "cat", "cat", "cat"}},
+        {"doc12", {"rat", "rat", "rat", "rat"}},
+        {"doc13", {"cat", "cat", "cat", "cat"}},
+        {"doc14", {"dog", "dog", "dog", "dog"}},
+        {"doc15", {"rat", "rat", "rat", "rat"}},
+        {"doc16", {"dog", "dog", "dog", "dog"}},
+        {"doc17", {"cat", "cat", "cat", "cat"}},
+        {"doc18", {"rat", "rat", "rat", "rat"}},
+    };
+
+    for (auto doc: docset){
+        for (auto token: doc.second){
+            test_set.insertInitValue(token,doc.first);
+        }
+    }
+
+    test_set.dumpResults();
+
+    test_set.process(50);
+
+    test_set.dumpResults();
 }
