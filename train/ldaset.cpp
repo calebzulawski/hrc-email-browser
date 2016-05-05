@@ -101,11 +101,10 @@ template <class T>
 int LDAset<T>::pullFromDist(std::vector<double> dist, double sum){
     double r = ((double)rand()/(double)RAND_MAX) * sum;
     int i = 0;
-    while (r > 0){
-        r -= dist[i];
+    while (r > dist[i] && i < dist.size()){
         i++;
     }
-    return i - 1;
+    return i;
 }
 
 template <class T>
