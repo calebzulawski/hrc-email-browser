@@ -67,6 +67,7 @@ void LDAset<T>::gibbsSample(int epochs){
                     continue;
 
                 // decrement all current counts and resample token
+                std::cout << "decrement topics";
                 doc_topic[dt]--;
                 topic_token[tw]--;
                 tokens_per_topic[topic]--;
@@ -89,6 +90,7 @@ void LDAset<T>::gibbsSample(int epochs){
                 new_topic = pullFromDist(dist_sum,dist_cum);
 
                 // increment count for new token topic
+                std::cout << " adding back topics" << std::endl;
                 doc_topic[std::make_pair(doc,new_topic)]++;
                 topic_token[std::make_pair(new_topic,token)]++;
                 tokens_per_topic[new_topic]++;
@@ -104,6 +106,7 @@ int LDAset<T>::pullFromDist(std::vector<double> dist, double sum){
     while (r > dist[i] && i < dist.size()){
         i++;
     }
+    if (i >= dist.size()) return dist.size()-1;
     return i;
 }
 
