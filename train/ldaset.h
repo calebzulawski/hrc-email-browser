@@ -23,17 +23,17 @@ int K;
 double alpha;
 double eta;
 
+int token_count;
+int doc_count;
+std::map<int,T> int_to_token;
+std::map<T,int> token_to_int;
+std::map<int,std::string> int_to_doc;
+std::map<std::string,int> doc_to_int;
+std::map<std::pair<int,int>,int> topic_token;
+std::map<std::pair<int,int>,int> doc_topic;
+std::vector<int> tokens_per_topic;
+
 public:
-    // remember to move these to be private variables after testing is complete
-    int token_count;
-    int doc_count;
-    std::map<int,T> int_to_token;
-    std::map<T,int> token_to_int;
-    std::map<int,std::string> int_to_doc;
-    std::map<std::string,int> doc_to_int;
-    std::map<std::pair<int,int>,int> topic_token;
-    std::map<std::pair<int,int>,int> doc_topic;
-    std::vector<int> tokens_per_topic;
 
     LDAset(int num_topics, double alpha = 0.1, double eta = 0.01);
     ~LDAset();
