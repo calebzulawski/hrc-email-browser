@@ -19,30 +19,28 @@ template <class T>
 class LDAset {
 //number of topics
 int K;
-
-//total number of tokens
-int total_tokens;
+// alpha parameter for dirichlet prior
 double alpha;
-
-std::map<T,std::map<int,int>> tokens_in_topic;
-std::map<std::string,int> tokens_per_doc;
-std::vector<int> tokens_per_topic;
-
-std::map<T,int> token_list;
-std::map<std::string,std::map<T,int>> doc_list;
-
-
-//maps documents to topic
-//output of process function will be stored here
-std::map<std::string,std::vector<double>> doc_topics;
+double eta;
 
 public:
-    std::map<std::string,std::map<T,int>> doc_list_topics;
-    std::map<std::string,std::map<int,int>> doc_topic_spread;
-    LDAset(int num_topics);
+    // remember to move these to be private variables after testing is complete
+    int token_count;
+    int doc_count;
+    std::map<int,T> int_to_token;
+    std::map<T,int> token_to_int;
+    std::map<int,std::string> int_to_doc;
+    std::map<std::string,int> doc_to_int;
+    std::map<std::pair<int,int>,int> topic_token;
+    std::map<std::pair<int,int>,int> doc_topic;
+    std::vector<int> tokens_per_topic;
+
+    LDAset(int num_topics, double alpha = 0.1, double eta = 0.01);
     ~LDAset();
     void insertInitValue(T token, std::string doc);
-    void process(int epochs = 0);
+    void process(int epochs = 0, int gibbs_epochs = 100);
+    void gibbsSample(int epochs = 100);
+    int  pullFromDist(std::vector<double> dist, double sum);
     void setTotalTokenCount(int count);
     void dumpResults();
 };

@@ -3,12 +3,13 @@
 #include <iomanip>
 
 template <class T>
-LDAset<T>::LDAset(int num_topics){
-    alpha = 0.01;
-    K = num_topics;
-    total_tokens = 0;
+LDAset<T>::LDAset(int K_init, double alpha_init, double eta_init){
+    alpha = alpha_init;
+    eta = eta_init;
+    K = K_init;
+    tokens_per_topic.assign(K,0);
+
     srand(time(NULL));
-    tokens_per_topic.resize(K,0);
     return;
 }
 
@@ -22,157 +23,145 @@ void LDAset<T>::insertInitValue(T token, std::string doc) {
 
     // add document and token to list
     int curr_topic = rand()%K;
-    token_list[token]++;
-    doc_list[doc][token]++;
-    if (doc_list_topics[doc].find(token) == doc_list_topics[doc].end()){
-        doc_list_topics[doc][token] = curr_topic;
+    if(token_to_int.find(token) == token_to_int.end()){
+        int mapped_int = token_to_int.size();
+        token_to_int[token] = mapped_int;
+        int_to_token[mapped_int] = token;
     }
-    else{
-        curr_topic = doc_list_topics[doc][token];
+    if(doc_to_int.find(doc) == doc_to_int.end()){
+        int mapped_int = doc_to_int.size();
+        doc_to_int[doc] = mapped_int;
+        int_to_doc[mapped_int] = doc;
     }
-    doc_topic_spread[doc][curr_topic]++;
-    tokens_per_doc[doc]++;
-    tokens_in_topic[token][curr_topic]++;
-    tokens_per_topic[curr_topic]++;
+
+    int doc_int = doc_to_int[doc];
+    int token_int = token_to_int[token];
+
+    doc_topic[std::make_pair(doc_int,curr_topic)]++;
+    topic_token[std::make_pair(curr_topic,token_int)]++;
 }
 
 template <class T>
-void LDAset<T>::process(int epochs){
-
-    int num_docs = doc_list.size();
-    double corpus_prob = 0;
-    double last_prob = corpus_prob;
-
+void LDAset<T>::process(int epochs, int gibbs_epochs){
 
     // cluster over epochs or until convergence
     bool force_converge = !epochs;
     while(epochs || force_converge){
-
-        for (auto &document: doc_list){
-            std::string curr_doc = document.first;
-            double doc_prob;
-            for (auto &token_pair: document.second){
-                T token = token_pair.first;
-                int maxtopic = doc_list_topics[curr_doc][token];
-                int maxprob = INT_MIN;
-                int tokens_in_curr_doc = doc_list[curr_doc][token];
-                tokens_in_topic[token][maxtopic] -= tokens_in_curr_doc;
-
-                doc_topic_spread[curr_doc][maxtopic] -= tokens_in_curr_doc;
-
-                for (int curr_topic = 0; curr_topic < K; curr_topic++){
-                    double p_t_d = log(doc_topic_spread[curr_doc][curr_topic] + alpha);
-                    p_t_d -= log(tokens_per_doc[curr_doc]);
-                    double p_w_t = log(tokens_in_topic[token][curr_topic] + tokens_in_curr_doc + alpha);
-                    p_w_t -= log(tokens_per_topic[curr_topic]);
-
-                    double total_prob = p_t_d + p_w_t;
-                    if (total_prob > maxprob){
-                        maxtopic = curr_topic;
-                        maxprob = total_prob;
-                        // readjust tokens_in_topic
-                    }
-                }
-                if (force_converge){
-                    doc_prob += maxprob/doc_list[curr_doc].size();
-                }
-
-                doc_topic_spread[curr_doc][maxtopic] += tokens_in_curr_doc;
-                tokens_in_topic[token][maxtopic] += tokens_in_curr_doc;
-                doc_list_topics[curr_doc][token] = maxtopic;
-            }
-            if (force_converge){
-                corpus_prob += doc_prob/doc_list.size();
-            }
-        }
-
-
-        if (force_converge){
-            if (abs(last_prob - corpus_prob) < 100){
-                force_converge = false;
-            }
-            last_prob = corpus_prob;
-            corpus_prob = 0;
-        }
-
+        gibbsSample(gibbs_epochs);
         epochs--;
     }
+}
 
-    // iterate through all documents and calculate most probable class
-    for (auto &document: doc_list){
-        std::string curr_doc = document.first;
+template <class T>
+void LDAset<T>::gibbsSample(int epochs){
+    for (int doc = 0; doc < int_to_doc.size(); doc++){
+        for (int token = 0; token < int_to_token.size(); token++){
+            for (int topic = 0; topic < K; topic++){
+                std::pair<int,int> dt = std::make_pair(doc,topic);
+                std::pair<int,int> tw = std::make_pair(topic,token);
+                if (doc_topic.find(dt) == doc_topic.end()
+                || doc_topic[dt] == 0
+                || topic_token.find(tw) == topic_token.end()
+                || topic_token[tw] == 0
+                )
+                    continue;
 
-        if (doc_topics[curr_doc].size() < K){
-            doc_topics[curr_doc].assign(K,0);
-        }
+                // decrement all current counts and resample token
+                doc_topic[dt]--;
+                topic_token[tw]--;
+                tokens_per_topic[topic]--;
 
-        for (int curr_topic = 0; curr_topic < K; curr_topic++){
-            doc_topics[curr_doc][curr_topic] = doc_topic_spread[curr_doc][curr_topic]/tokens_per_doc[curr_doc];
+                double dist_cum = 0;
+                std::vector<double> dist_sum;
+
+                int new_topic = 0;
+                for (new_topic = 0; new_topic < K; new_topic++){
+                    std::pair<int,int> new_dt = std::make_pair(doc,new_topic);
+                    std::pair<int,int> new_tw = std::make_pair(new_topic,token);
+
+                    double tmp = (topic_token[new_tw] + eta)/(tokens_per_topic[new_topic]+ eta*int_to_token.size());
+                    tmp *= (doc_topic[new_dt] + alpha);
+
+                    dist_cum += tmp;
+                    dist_sum.push_back(dist_cum);
+                }
+
+                new_topic = pullFromDist(dist_sum,dist_cum);
+
+                // increment count for new token topic
+                doc_topic[std::make_pair(doc,new_topic)]++;
+                topic_token[std::make_pair(new_topic,token)]++;
+                tokens_per_topic[new_topic]++;
+            }
         }
     }
+}
 
+template <class T>
+int LDAset<T>::pullFromDist(std::vector<double> dist, double sum){
+    double r = ((double)rand()/(double)RAND_MAX) * sum;
+    int i = 0;
+    while (r > 0){
+        r -= dist[i];
+        i++;
+    }
+    return i - 1;
 }
 
 template <class T>
 void LDAset<T>::setTotalTokenCount(int count){
-    total_tokens = count;
+    return;
 }
 
 template <class T>
 void LDAset<T>::dumpResults(){
-    for (auto &doc: doc_topics){
-        std::cout << doc.first << ":\t";
-        for (int curr_topic = 0; curr_topic < K; curr_topic++){
-            std::cout << std::setprecision(3) << doc.second[curr_topic] << "\t";
-        }
-        std::cout << "\n";
-    }
+    return;
 }
 
 int main(){
-    LDAset<std::string> test_set(3);
-    std::cout << "created new LDAset\n";
-
-    std::map<std::string,std::vector<std::string>> docset = {
-        {"doc01", {"cat", "cat", "cat", "cat"}},
-        {"doc02", {"dog", "dog", "dog", "dog"}},
-        {"doc03", {"rat", "rat", "rat", "rat"}},
-        {"doc04", {"dog", "dog", "dog", "dog"}},
-        {"doc05", {"cat", "cat", "cat", "cat"}},
-        {"doc06", {"rat", "rat", "rat", "rat"}},
-        {"doc07", {"cat", "cat", "cat", "cat"}},
-        {"doc08", {"dog", "dog", "dog", "dog"}},
-        {"doc09", {"rat", "rat", "rat", "rat"}},
-        {"doc10", {"dog", "dog", "dog", "dog"}},
-        {"doc11", {"cat", "cat", "cat", "cat"}},
-        {"doc12", {"rat", "rat", "rat", "rat"}},
-        {"doc13", {"cat", "cat", "cat", "cat"}},
-        {"doc14", {"dog", "dog", "dog", "dog"}},
-        {"doc15", {"rat", "rat", "rat", "rat"}},
-        {"doc16", {"dog", "dog", "dog", "dog"}},
-        {"doc17", {"cat", "cat", "cat", "cat"}},
-        {"doc18", {"rat", "rat", "rat", "rat"}},
-    };
-
-    for (auto &doc: docset){
-        for (auto &token: doc.second){
-            test_set.insertInitValue(token,doc.first);
-            std::cout << doc.first << " ";
-            std::cout << token << " ";
-            std::cout << test_set.doc_list_topics[doc.first][token] << "\n";
-        }
-    }
-
-    test_set.process(5);
-
-    std::cout << "trained classes\n";
-    for (auto &doc: test_set.doc_list_topics){
-        for (auto &token: doc.second){
-            std::cout << doc.first << " ";
-            std::cout << token.first << " ";
-            std::cout << test_set.doc_list_topics[doc.first][token.first] << "\n";
-        }
-    }
-
-    test_set.dumpResults();
+    // LDAset<std::string> test_set(3);
+    // std::cout << "created new LDAset\n";
+    //
+    // std::map<std::string,std::vector<std::string>> docset = {
+    //     {"doc01", {"cat", "cat", "cat", "cat"}},
+    //     {"doc02", {"dog", "dog", "dog", "dog"}},
+    //     {"doc03", {"rat", "rat", "rat", "rat"}},
+    //     {"doc04", {"dog", "dog", "dog", "dog"}},
+    //     {"doc05", {"cat", "cat", "cat", "cat"}},
+    //     {"doc06", {"rat", "rat", "rat", "rat"}},
+    //     {"doc07", {"cat", "cat", "cat", "cat"}},
+    //     {"doc08", {"dog", "dog", "dog", "dog"}},
+    //     {"doc09", {"rat", "rat", "rat", "rat"}},
+    //     {"doc10", {"dog", "dog", "dog", "dog"}},
+    //     {"doc11", {"cat", "cat", "cat", "cat"}},
+    //     {"doc12", {"rat", "rat", "rat", "rat"}},
+    //     {"doc13", {"cat", "cat", "cat", "cat"}},
+    //     {"doc14", {"dog", "dog", "dog", "dog"}},
+    //     {"doc15", {"rat", "rat", "rat", "rat"}},
+    //     {"doc16", {"dog", "dog", "dog", "dog"}},
+    //     {"doc17", {"cat", "cat", "cat", "cat"}},
+    //     {"doc18", {"rat", "rat", "rat", "rat"}},
+    // };
+    //
+    // for (auto &doc: docset){
+    //     for (auto &token: doc.second){
+    //         test_set.insertInitValue(token,doc.first);
+    //         std::cout << doc.first << " ";
+    //         std::cout << token << " ";
+    //         std::cout << test_set.doc_list_topics[doc.first][token] << "\n";
+    //     }
+    // }
+    //
+    // test_set.process(5);
+    //
+    // std::cout << "trained classes\n";
+    // for (auto &doc: test_set.doc_list_topics){
+    //     for (auto &token: doc.second){
+    //         std::cout << doc.first << " ";
+    //         std::cout << token.first << " ";
+    //         std::cout << test_set.doc_list_topics[doc.first][token.first] << "\n";
+    //     }
+    // }
+    //
+    // test_set.dumpResults();
 }
