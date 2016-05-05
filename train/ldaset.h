@@ -22,6 +22,7 @@ int K;
 
 //total number of tokens
 int total_tokens;
+double alpha;
 
 std::map<T,std::map<int,int>> tokens_in_topic;
 std::map<std::string,int> tokens_per_doc;

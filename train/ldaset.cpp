@@ -4,6 +4,7 @@
 
 template <class T>
 LDAset<T>::LDAset(int num_topics){
+    alpha = 0.01;
     K = num_topics;
     total_tokens = 0;
     srand(time(NULL));
@@ -60,9 +61,9 @@ void LDAset<T>::process(int epochs){
                 doc_topic_spread[curr_doc][maxtopic] -= tokens_in_curr_doc;
 
                 for (int curr_topic = 0; curr_topic < K; curr_topic++){
-                    double p_t_d = log(doc_topic_spread[curr_doc][curr_topic] + 1);
+                    double p_t_d = log(doc_topic_spread[curr_doc][curr_topic] + alpha);
                     p_t_d -= log(tokens_per_doc[curr_doc]);
-                    double p_w_t = log(tokens_in_topic[token][curr_topic] + tokens_in_curr_doc + 1);
+                    double p_w_t = log(tokens_in_topic[token][curr_topic] + tokens_in_curr_doc + alpha);
                     p_w_t -= log(tokens_per_topic[curr_topic]);
 
                     double total_prob = p_t_d + p_w_t;
@@ -133,15 +134,15 @@ int main(){
     std::cout << "created new LDAset\n";
 
     std::map<std::string,std::vector<std::string>> docset = {
-        {"doc1", {"cat", "cat", "cat", "cat"}},
-        {"doc2", {"dog", "dog", "dog", "dog"}},
-        {"doc3", {"rat", "rat", "rat", "rat"}},
-        {"doc4", {"dog", "dog", "dog", "dog"}},
-        {"doc5", {"cat", "cat", "cat", "cat"}},
-        {"doc6", {"rat", "rat", "rat", "rat"}},
-        {"doc7", {"cat", "cat", "cat", "cat"}},
-        {"doc8", {"dog", "dog", "dog", "dog"}},
-        {"doc9", {"rat", "rat", "rat", "rat"}},
+        {"doc01", {"cat", "cat", "cat", "cat"}},
+        {"doc02", {"dog", "dog", "dog", "dog"}},
+        {"doc03", {"rat", "rat", "rat", "rat"}},
+        {"doc04", {"dog", "dog", "dog", "dog"}},
+        {"doc05", {"cat", "cat", "cat", "cat"}},
+        {"doc06", {"rat", "rat", "rat", "rat"}},
+        {"doc07", {"cat", "cat", "cat", "cat"}},
+        {"doc08", {"dog", "dog", "dog", "dog"}},
+        {"doc09", {"rat", "rat", "rat", "rat"}},
         {"doc10", {"dog", "dog", "dog", "dog"}},
         {"doc11", {"cat", "cat", "cat", "cat"}},
         {"doc12", {"rat", "rat", "rat", "rat"}},
