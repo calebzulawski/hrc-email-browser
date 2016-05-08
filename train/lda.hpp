@@ -17,8 +17,12 @@ public:
                  size_t n_docs,
                  uint epochs = 100);
 
+    void writeTokenJSON(std::vector<std::string> vocabulary, std::string filename);
+    void writeDocumentJSON(std::vector<std::string> documents, std::string filename);
 
 private:
+
+    std::string escape_json(const std::string &s);
 
     void gibbsSample(const std::vector<size_t>& tokens,
                      const std::vector<size_t>& documents,

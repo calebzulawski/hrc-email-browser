@@ -2,3 +2,4 @@ hrcemail.sqlite
 
 train/*.o
 train/train
+train/*.json

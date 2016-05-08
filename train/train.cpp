@@ -49,5 +49,9 @@ int main() {
     lda.process(dataset.ngramIndices,
                 dataset.documentIndices,
                 dataset.vocabulary.size(),
-                dataset.documents.size());
+                dataset.documents.size(),
+                100); // epochs
+
+    lda.writeTokenJSON(dataset.vocabulary, "tokens.json");
+    lda.writeDocumentJSON(dataset.documents, "documents.json");
 }
