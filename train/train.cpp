@@ -3,17 +3,20 @@
 #include <cstdlib>
 #include <cstring>
 #include "preprocessor.hpp"
+#include "lda.hpp"
 
 int callback(void* passptr, int ncol, char** contents, char** names) {
     auto preprocessor = static_cast<Preprocessor<2>*>(passptr);
     std::cout << contents[0] << std::endl; // docID
-    auto counts = preprocessor->bagOfWords(contents[1]); // docText
+    preprocessor->addDocument(contents[1], contents[0]); // docText
     return 0;
 }
 
 int main() {
     // Create bigrams
-    Preprocessor<2> preprocessor;
+    static constexpr size_t N = 1;
+
+    Preprocessor<N> preprocessor;
 
     // sqlite database
     sqlite3* db;
@@ -39,4 +42,12 @@ int main() {
         sqlite3_free(error);
         abort();
     }
+
+    Dataset<N> dataset = preprocessor.getDataset();
+
+    auto lda = LDA(10); // 10 topics
+    lda.process(dataset.ngramIndices,
+                dataset.documentIndices,
+                dataset.vocabulary.size(),
+                dataset.documents.size());
 }
