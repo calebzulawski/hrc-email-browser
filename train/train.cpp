@@ -6,17 +6,14 @@
 #include "lda.hpp"
 
 int callback(void* passptr, int ncol, char** contents, char** names) {
-    auto preprocessor = static_cast<Preprocessor<2>*>(passptr);
+    auto preprocessor = static_cast<Preprocessor*>(passptr);
     std::cout << contents[0] << std::endl; // docID
     preprocessor->addDocument(contents[1], contents[0]); // docText
     return 0;
 }
 
 int main() {
-    // Create bigrams
-    static constexpr size_t N = 1;
-
-    Preprocessor<N> preprocessor;
+    Preprocessor preprocessor;
 
     // sqlite database
     sqlite3* db;
@@ -43,10 +40,10 @@ int main() {
         abort();
     }
 
-    Dataset<N> dataset = preprocessor.getDataset();
+    Dataset dataset = preprocessor.getDataset();
 
     auto lda = LDA(10); // 10 topics
-    lda.process(dataset.ngramIndices,
+    lda.process(dataset.tokenIndices,
                 dataset.documentIndices,
                 dataset.vocabulary.size(),
                 dataset.documents.size(),

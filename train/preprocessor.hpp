@@ -8,75 +8,39 @@
 #include <algorithm>
 #include <array>
 
-template<size_t N>
 class Dataset {
 public:
-    // typedef std::array<std::string, N> NGRAM;
-    typedef std::string NGRAM; // unigram
-
-    std::vector<size_t> ngramIndices;
+    std::vector<size_t> tokenIndices;
     std::vector<size_t> documentIndices;
-    std::vector<NGRAM> vocabulary;
+    std::vector<std::string> vocabulary;
     std::vector<std::string> documents;
 };
 
-template<size_t N>
 class Preprocessor {
 public:
-    // typedef std::array<std::string, N> NGRAM;
-    typedef std::string NGRAM; // unigram
-
     void addDocument(const char* text, const char* document)
     {
-        char** tokens = mitie_tokenize(text);
+        char** inputTokens = mitie_tokenize(text);
 
         std::string docstring = document;
 
-        for (char** token = tokens; *token != nullptr; token++) {
+        for (char** token = inputTokens; *token != nullptr; token++) {
             std::string tokenstring = *token;
-            ngrams.push_back(tokenstring);
+            tokens.push_back(tokenstring);
             documents.push_back(docstring);
         }
 
-        // create n-grams
-        // NGRAM ngram;
-        // for (char** token = tokens; *token != nullptr; token++) {
-        //     // shift n-gram
-        //     for (uint i = 0; i < N - 1; i++)
-        //         ngram[i] = ngram[i+1];
-        //
-        //     // insert new token
-        //     ngram[N-1] = *token;
-        //
-        //     // add n-gram
-        //     ngrams.push_back(ngram);
-        //     documents.push_back(docstring);
-        // }
-        //
-        // // get final n-grams
-        // for (uint i = N - 1; i > 0; i--) {
-        //     for (uint j = 0; j < i - 1; j++) {
-        //         ngram[j] = ngram[j+1];
-        //     }
-        //     // Shift in empty token for end of document
-        //     ngram[i] = "";
-        //
-        //     // add n-gram
-        //     ngrams.push_back(ngram);
-        //     documents.push_back(docstring);
-        // }
-
         // free the tokens and return the counts
-        mitie_free(tokens);
+        mitie_free(inputTokens);
     }
 
-    Dataset<N> getDataset() {
-        Dataset<N> dataset;
+    Dataset getDataset() {
+        Dataset dataset;
 
-        // get new ngram vector
-        index(ngrams, dataset.ngramIndices, dataset.vocabulary);
+        // get new token vector
+        index(tokens, dataset.tokenIndices, dataset.vocabulary);
         // erase original vector
-        std::vector<NGRAM>().swap(ngrams);
+        std::vector<std::string>().swap(tokens);
 
         // get new document vector
         index(documents, dataset.documentIndices, dataset.documents);
@@ -87,11 +51,12 @@ public:
 
 private:
 
-    template<typename T>
-    static void index(const std::vector<T>& in, std::vector<size_t>& indices, std::vector<T>& values) {
-        std::set<T> valueSet(in.begin(), in.end());
+    static void index(const std::vector<std::string>& in,
+                      std::vector<size_t>& indices,
+                      std::vector<std::string>& values) {
+        std::set<std::string> valueSet(in.begin(), in.end());
         values.assign(valueSet.begin(), valueSet.end());
-        std::map<T, size_t> valueMap;
+        std::map<std::string, size_t> valueMap;
         for (size_t i = 0; i < values.size(); i++)
             valueMap[values[i]] = i;
 
@@ -99,7 +64,7 @@ private:
             indices.push_back(valueMap[value]);
     }
 
-    std::vector<NGRAM> ngrams;
+    std::vector<std::string> tokens;
     std::vector<std::string> documents;
 };
 
