@@ -7,6 +7,7 @@
 #include <set>
 #include <algorithm>
 #include <array>
+#include <regex>
 
 class Dataset {
 public:
@@ -20,12 +21,19 @@ class Preprocessor {
 public:
     void addDocument(const char* text, const char* document)
     {
+        // only select tokens that contain letters or numbers
+        std::regex filter_regex(".*[a-zA-Z0-9].*");
+
         char** inputTokens = mitie_tokenize(text);
 
         std::string docstring = document;
 
         for (char** token = inputTokens; *token != nullptr; token++) {
             std::string tokenstring = *token;
+
+            if (!std::regex_match(tokenstring, filter_regex))
+                continue;
+
             tokens.push_back(tokenstring);
             documents.push_back(docstring);
         }
@@ -50,7 +58,6 @@ public:
     }
 
 private:
-
     static void index(const std::vector<std::string>& in,
                       std::vector<size_t>& indices,
                       std::vector<std::string>& values) {
