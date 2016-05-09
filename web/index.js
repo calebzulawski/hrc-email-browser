@@ -30,15 +30,43 @@ app.get('/', function (req, res) {
     res.send('Hello World!');
 });
 
-app.get('/search/:query', function (req, res, next) {
+// this is super unsafe but database is loaded read-only...
+function buildSearch(query) {
+    query = decodeURI(query).split(" ");
+    columns = "";
+    conditions = "";
+    for (var i = 0; i < query.length; i++) {
+        if (i != 0) {
+            columns += ",";
+            conditions += "OR ";
+        }
+        columns += "(length(docText) - length(replace(upper(docText), \"" + query[i].toUpperCase() + "\", \'\')))/length(\"" + query[i] + "\") AS R" + i;
+        conditions += "docText LIKE \"%" + query[i] + "%\"";
+    }
+    return {query: query, sql: "SELECT docID, " + columns + " FROM document WHERE " + conditions + ";"};
+}
 
+app.get('/search/:search', function (req, res, next) {});
+app.get('/email/:email', function (req, res, next) {});
+
+app.param('search', function (req, res, next, query) {
+    console.log('query: ' + query);
+    db.serialize(function() {
+        search = buildSearch(query);
+        console.log(search.sql)
+        db.all(search.sql, function(error, rows) {
+            if (error != null) {
+                console.log(error);
+                res.send('sqlite3 error!');
+                return;
+            }
+            console.log(rows);
+            res.send('searched');
+        });
+    });
 });
 
-app.get('/email/:id', function (req, res, next) {
-
-});
-
-app.param('id', function (req, res, next, id) {
+app.param('email', function (req, res, next, id) {
     console.log('request for email: ' + id);
     db.serialize(function() {
         db.all("SELECT * from document WHERE docID LIKE ?", id, function(error, rows) {
@@ -53,7 +81,7 @@ app.param('id', function (req, res, next, id) {
             }
             console.log(rows);
             res.render('email', {
-                id: rows[0].docID,
+                id:      rows[0].docID,
                 subject: rows[0].subject,
                 date:    rows[0].docDate,
                 from:    rows[0].from,
