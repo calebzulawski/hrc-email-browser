@@ -5,6 +5,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <queue>
+#include <math.h>
 
 LDA::LDA(uint K, double alpha, double eta, uint seed)
     : K(K)
@@ -17,14 +19,13 @@ LDA::LDA(uint K, double alpha, double eta, uint seed)
     generator = std::default_random_engine(seed);
 }
 
-void LDA::process(const std::vector<size_t>& tokens,
-                  const std::vector<size_t>& documents,
-                  size_t n_tokens,
-                  size_t n_docs,
-                  uint epochs) {
-
-    // initialize some values
-    topic_per_token.resize(tokens.size());
+void LDA::setInitialState(const std::vector<size_t>& tokens,
+                          const std::vector<size_t>& documents,
+                          size_t n_tokens,
+                          size_t n_docs,
+                          int num_tokens){
+    //initalize values
+    topic_per_token.resize(num_tokens);
     topic_count.resize(K, 0);
     topic_token = SparseMatrix<uint>(K, n_tokens);
     doc_topic = SparseMatrix<uint>(n_docs, K);
@@ -35,12 +36,38 @@ void LDA::process(const std::vector<size_t>& tokens,
         topic_count[topic]++;
         topic_per_token[i] = topic;
     }
+}
+
+void LDA::process(const std::vector<size_t>& tokens,
+                  const std::vector<size_t>& documents,
+                  size_t n_tokens,
+                  size_t n_docs,
+                  uint epochs) {
+
+    // set initial state
+    setInitialState(tokens,documents,n_tokens,n_docs,tokens.size());
+
+    double last_ll = 0;
+    double curr_ll = 0;
+    int conv_count = 0;
 
     // cluster over epochs or until convergence
     for (uint i = 0; i < epochs || epochs == 0; i++) {
         std::cout << "Epoch " << i << "/" << epochs << std::endl;
         gibbsSample(tokens, documents, topic_per_token);
-        // TODO: break on convergence
+        curr_ll = loglikelihood(tokens,documents,n_tokens,n_docs);
+        std::cout << "ll: " << fabs(curr_ll - last_ll) << std::endl;
+        if (fabs(curr_ll - last_ll) < 5.0e-2){
+            conv_count++;
+            if (conv_count >= 50){
+                break;
+            }
+        }
+        else{
+            conv_count = 0;
+        }
+        last_ll = curr_ll;
+        std::cout << "conv_count: "<< conv_count << std::endl;
     }
 }
 
@@ -162,4 +189,58 @@ void LDA::writeDocumentJSON(std::vector<std::string> documents, std::string file
     json << std::endl << "}" << std::endl;
     json.close();
     delete[] values;
+}
+
+double LDA::perplexity(const std::vector<size_t>& tokens,
+                       const std::vector<size_t>& documents,
+                       size_t n_tokens,
+                       size_t n_docs,
+                       uint epochs){
+    // set initial state
+    setInitialState(tokens,documents,n_tokens,n_docs,tokens.size()/3);
+
+    // cluster over epochs or until convergence
+    for (uint i = 0; i < epochs || epochs == 0; i++) {
+        std::cout << "Epoch " << i << "/" << epochs << std::endl;
+        gibbsSample(tokens, documents, topic_per_token);
+        // TODO: break on convergence
+    }
+
+    return 0;
+}
+
+double LDA::loglikelihood(const std::vector<size_t>& tokens,
+                          const std::vector<size_t>& documents,
+                          size_t n_tokens,
+                          size_t n_docs){
+
+    uint doc_count[n_docs] = {0};
+
+    for (uint doc = 0; doc < n_docs; doc++) {
+        for (uint topic = 0; topic < K; topic++) {
+            if (!doc_topic.isZero(doc,topic))
+                doc_count[doc] += doc_topic(doc,topic);
+        }
+    }
+
+    double lg_alpha = std::lgamma(alpha);
+    double lg_eta = std::lgamma(eta);
+    double ll = K * std::lgamma(eta * n_tokens);
+
+    for (uint topic = 0; topic < K; topic++) {
+        ll -= std::lgamma(eta * n_tokens + topic_count[topic])/n_tokens;
+        for (uint token = 0; token < n_tokens; token++) {
+            if (!topic_token.isZero(topic, token))
+                ll += (std::lgamma(eta + topic_token(topic,token)) - lg_eta)/n_tokens;
+        }
+    }
+
+    for (uint doc = 0; doc < n_docs; doc++) {
+        ll += (std::lgamma(alpha * K) - std::lgamma(alpha * K + doc_count[doc]))/n_tokens;
+        for (uint topic = 0; topic < K; topic++) {
+            if (!doc_topic.isZero(doc,topic))
+                ll += (std::lgamma(eta + doc_topic(doc,topic)) - lg_alpha)/n_tokens;
+        }
+    }
+    return ll;
 }
