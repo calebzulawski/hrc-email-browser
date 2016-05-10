@@ -30,6 +30,7 @@ void LDA::setInitialState(const std::vector<size_t>& tokens,
     topic_token = SparseMatrix<uint>(K, n_tokens);
     doc_topic = SparseMatrix<uint>(n_docs, K);
     for (uint i = 0; i < tokens.size(); i++) {
+        //std::cout << documents[i] << " " <<  tokens[i] << std::endl;
         size_t topic = i % K;
         doc_topic(documents[i], topic)++;
         topic_token(topic, tokens[i])++;
@@ -47,6 +48,7 @@ void LDA::process(const std::vector<size_t>& tokens,
     // set initial state
     setInitialState(tokens,documents,n_tokens,n_docs,tokens.size());
 
+    double conv_limit = 5e2/n_tokens;
     double last_ll = 0;
     double curr_ll = 0;
     int conv_count = 0;
@@ -57,7 +59,7 @@ void LDA::process(const std::vector<size_t>& tokens,
         gibbsSample(tokens, documents, topic_per_token);
         curr_ll = loglikelihood(tokens,documents,n_tokens,n_docs);
         std::cout << "ll: " << fabs(curr_ll - last_ll) << std::endl;
-        if (fabs(curr_ll - last_ll) < 5.0e-2){
+        if (fabs(curr_ll - last_ll) < conv_limit){
             conv_count++;
             if (conv_count >= 50){
                 break;
@@ -67,7 +69,7 @@ void LDA::process(const std::vector<size_t>& tokens,
             conv_count = 0;
         }
         last_ll = curr_ll;
-        std::cout << "conv_count: "<< conv_count << std::endl;
+        std::cout << "conv_count: "<< conv_count << " " << conv_limit << std::endl;
     }
 }
 
@@ -197,16 +199,19 @@ double LDA::perplexity(const std::vector<size_t>& tokens,
                        size_t n_docs,
                        uint epochs){
     // set initial state
-    setInitialState(tokens,documents,n_tokens,n_docs,tokens.size()/3);
 
+    std::vector<size_t> training_tokens (tokens.begin(),tokens.begin()+tokens.size()/2);
+    setInitialState(training_tokens,documents,n_tokens,n_docs,training_tokens.size());
+
+    std::cout << "state 2" << std::endl;
     // cluster over epochs or until convergence
     for (uint i = 0; i < epochs || epochs == 0; i++) {
         std::cout << "Epoch " << i << "/" << epochs << std::endl;
-        gibbsSample(tokens, documents, topic_per_token);
-        // TODO: break on convergence
+        gibbsSample(training_tokens, documents, topic_per_token);
     }
 
-    return 0;
+    std::vector<size_t> holdout_tokens (tokens.begin()+tokens.size()/2,tokens.end());
+    return loglikelihood(holdout_tokens,documents,n_tokens,n_docs);
 }
 
 double LDA::loglikelihood(const std::vector<size_t>& tokens,
