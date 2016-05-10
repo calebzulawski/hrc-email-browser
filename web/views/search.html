@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Search Results</title>
+        <link rel="stylesheet" href="/static/css/style.css">
+        <script type=text/javascript>
+        function submitForm() {
+            window.location.href = "/search/" + encodeURIComponent(document.forms["form"]["query"].value.trim());
+        }
+        </script>
+    </head>
+    <body>
+    <form name="form" action="javascript:submitForm()">
+        Query: <input type="text" name="query">
+    </form>
+    <h2>Results:</h2>
+    <ul style="list-style-type:disc">
+    {% for result in results %}
+        <li><a href="/email/{{ result.docID }}">{{ result.docID }} - {{ result.subject }}</a></li>
+    {% endfor %}
+    </ul>
+    </body>
+</html>

@@ -27,7 +27,7 @@ swig.setDefaults({ cache: false });
 //   Display email with database ID :id
 
 app.get('/', function (req, res) {
-    res.send('Hello World!');
+    res.render('search', {results: []});
 });
 
 // this is super unsafe but database is loaded read-only...
@@ -37,13 +37,13 @@ function buildSearch(query) {
     conditions = "";
     for (var i = 0; i < query.length; i++) {
         if (i != 0) {
-            columns += ",";
+            columns += "+";
             conditions += "OR ";
         }
-        columns += "(length(docText) - length(replace(upper(docText), \"" + query[i].toUpperCase() + "\", \'\')))/length(\"" + query[i] + "\") AS R" + i;
+        columns += "(length(docText) - length(replace(upper(docText), \"" + query[i].toUpperCase() + "\", \'\')))/length(\"" + query[i] + "\")";
         conditions += "docText LIKE \"%" + query[i] + "%\"";
     }
-    return {query: query, sql: "SELECT docID, " + columns + " FROM document WHERE " + conditions + ";"};
+    return {query: query, sql: "SELECT docID, subject, " + columns + "AS match FROM document WHERE " + conditions + " ORDER BY match DESC LIMIT 40;"};
 }
 
 app.get('/search/:search', function (req, res, next) {});
@@ -61,7 +61,7 @@ app.param('search', function (req, res, next, query) {
                 return;
             }
             console.log(rows);
-            res.send('searched');
+            res.render('search', {results: rows});
         });
     });
 });
