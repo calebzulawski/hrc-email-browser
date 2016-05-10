@@ -6,15 +6,27 @@
         <link rel="stylesheet" href="/static/css/style.css">
     </head>
     <body>
-    <h2>Subject:</h2>
-    {{ subject }}
-    <h2>Date:</h2>
-    {{ date }}
-    <h2>From:</h2>
-    {{ from }}
-    <h2>To:</h2>
-    {{ to }}
-    <h2>Body:</h2>
-    {{ body }}
+    <h2>Email Contents:</h2>
+    <a href="/static/pdf/{{ id }}.pdf">PDF link</a>
+    <p><b>Subject:</b> {{ subject }}</p>
+    <p><b>Date:</b> {{ date }}</p>
+    <p><b>From:</b> {{ from }}</p>
+    <p><b>To:</b> {{ to }}</p>
+    <p><b>Body:</b></p>
+    <p>{{ body }}</p>
+
+    <h2>Explore more emails:</h2>
+    <h3>Most similar documents:</h3>
+    <ul style="list-style-type:disc">
+    {% for doc in close %}
+        <li><a href="/email/{{ doc.docID }}">{{ doc.docID }}</a> - {{ doc.distance }}</li>
+    {% endfor %}
+    </ul>
+    <h3>Most different documents:</h3>
+    <ul style="list-style-type:disc">
+    {% for doc in far %}
+        <li><a href="/email/{{ doc.docID }}">{{ doc.docID }}</a> - {{ doc.distance }}</li>
+    {% endfor %}
+    </ul>
     </body>
 </html>

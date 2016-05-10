@@ -114,13 +114,13 @@ app.param('email', function (req, res, next, id) {
                         date:    emailRow[0].docDate,
                         from:    emailRow[0].from,
                         to:      emailRow[0].to,
-                        body:    emailRow[0].docText
+                        body:    emailRow[0].docText,
+                        close:   distances.slice(0,10),
+                        far:     distances.slice(distances.length-10, distances.length+1).reverse()
                     });
                 });
             })
         });
-
-
     });
 });
 

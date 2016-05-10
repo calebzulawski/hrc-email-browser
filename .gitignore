@@ -4,3 +4,4 @@ train/*.o
 train/train
 train/*.json
 web/node_modules
+web/public/pdf
