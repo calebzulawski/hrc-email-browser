@@ -203,7 +203,6 @@ double LDA::perplexity(const std::vector<size_t>& tokens,
     std::vector<size_t> training_tokens (tokens.begin(),tokens.begin()+tokens.size()/2);
     setInitialState(training_tokens,documents,n_tokens,n_docs,training_tokens.size());
 
-    std::cout << "state 2" << std::endl;
     // cluster over epochs or until convergence
     for (uint i = 0; i < epochs || epochs == 0; i++) {
         std::cout << "Epoch " << i << "/" << epochs << std::endl;
