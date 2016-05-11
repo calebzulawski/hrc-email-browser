@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Search Results</title>
+        <link rel="stylesheet" href="/static/css/style.css">
+    </head>
+    <body>
+    <h1>Topic: {{ topic }}</h1>
+    <ul style="list-style-type:disc">
+    {% for result in results %}
+        <li><a href="/email/{{ result.docID }}">{{ result.docID }} - [{{ result.T0 }}, {{ result.T1 }}, {{ result.T2 }}, {{ result.T3 }}, {{ result.T4 }}, {{ result.T5 }}, {{ result.T6 }}, {{ result.T7 }}, {{ result.T8 }}, {{ result.T9 }}]</a></li>
+    {% endfor %}
+    </ul>
+    </body>
+</html>

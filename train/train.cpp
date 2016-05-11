@@ -42,7 +42,7 @@ int main() {
 
     Dataset dataset = preprocessor.getDataset();
 
-    auto lda = LDA(10); // 10 topics
+    auto lda = LDA(10, 1e-3, 1e-2); // 10 topics, alpha = 1e-3, eta = 1e-2 
     lda.process(dataset.tokenIndices,
                 dataset.documentIndices,
                 dataset.vocabulary.size(),
