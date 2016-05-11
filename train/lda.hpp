@@ -20,6 +20,22 @@ public:
     void writeTokenJSON(std::vector<std::string> vocabulary, std::string filename);
     void writeDocumentJSON(std::vector<std::string> documents, std::string filename);
 
+    void setInitialState(const std::vector<size_t>& tokens,
+                         const std::vector<size_t>& documents,
+                         size_t n_tokens,
+                         size_t n_docs,
+                         int num_tokens);
+
+    double perplexity(const std::vector<size_t>& tokens,
+                      const std::vector<size_t>& documents,
+                      size_t n_tokens,
+                      size_t n_docs,
+                      uint epochs);
+    double loglikelihood(const std::vector<size_t>& tokens,
+                         const std::vector<size_t>& documents,
+                         size_t n_tokens,
+                         size_t n_docs);
+
 private:
 
     std::string escape_json(const std::string &s);

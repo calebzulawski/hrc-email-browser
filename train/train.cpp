@@ -51,4 +51,19 @@ int main() {
 
     lda.writeTokenJSON(dataset.vocabulary, "tokens.json");
     lda.writeDocumentJSON(dataset.documents, "documents.json");
+
+    // calculate perplexity
+    std::vector<double> perps = {};
+    for (uint i = 2; i < 10; i++){
+        auto lda2 = LDA(i);
+        double perp = lda2.perplexity(dataset.tokenIndices,
+                                     dataset.documentIndices,
+                                     dataset.vocabulary.size(),
+                                     dataset.documents.size(),
+                                     1000);
+        perps.push_back(perp);
+    }
+    for(uint i = 0; i < perps.size(); i++){
+        std::cout << "topics: " << i << " perplexity: " << perps[i] << std::endl;
+    }
 }
